@@ -1,4 +1,38 @@
+const crypto = require('crypto');
 const supabase = require('../../supabase');
+
+// Verifies that the request actually came from Telegram
+function verifyTelegramInitData(initData) {
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+
+    params.delete('hash');
+
+    const checkString = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n');
+
+    const secretKey = crypto
+      .createHmac('sha256', 'WebAppData')
+      .update(process.env.BOT_TOKEN)
+      .digest();
+
+    const expectedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(checkString)
+      .digest('hex');
+
+    if (expectedHash !== hash) return null;
+
+    const userParam = params.get('user');
+    return userParam ? JSON.parse(userParam) : null;
+  } catch {
+    return null;
+  }
+}
 
 async function getOrCreateUser(telegramUser) {
   const { id, username, first_name } = telegramUser;
@@ -30,4 +64,4 @@ async function getUserById(telegramId) {
   return data;
 }
 
-module.exports = { getOrCreateUser, getUserById };
+module.exports = { getOrCreateUser, getUserById, verifyTelegramInitData };
