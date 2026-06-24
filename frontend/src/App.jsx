@@ -9,6 +9,7 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [expiresAt, setExpiresAt] = useState(null);
   const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(null);
 
   useEffect(() => {
     async function init() {
@@ -16,13 +17,16 @@ export default function App() {
         const tg = window.Telegram?.WebApp;
         tg?.expand();
 
-        const telegramUser = tg?.initDataUnsafe?.user || {
-          id: 123456789,
-          username: 'testuser',
-          first_name: 'Test',
-        };
+        const initData = tg?.initData;
 
-        const loginRes = await loginUser(telegramUser);
+        // Block access if not opened inside Telegram
+        if (!initData) {
+          setError('Open this app inside Telegram.');
+          setLoading(false);
+          return;
+        }
+
+        const loginRes = await loginUser(initData);
         const userData = loginRes.data.user;
         setUser(userData);
 
@@ -31,6 +35,7 @@ export default function App() {
         setExpiresAt(subRes.data.expiresAt || null);
       } catch (err) {
         console.error(err);
+        setError('Failed to load. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -38,14 +43,18 @@ export default function App() {
     init();
   }, []);
 
-  function handleUnlocked() {
-    setIsPremium(true);
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-dark">
         <p className="text-gray-400 text-sm animate-pulse">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-dark">
+        <p className="text-red-400 text-sm text-center px-6">{error}</p>
       </div>
     );
   }
@@ -65,7 +74,7 @@ export default function App() {
           <Feed
             isPremium={isPremium}
             telegramId={user?.telegram_id}
-            onUnlocked={handleUnlocked}
+            onUnlocked={() => setIsPremium(true)}
           />
         </div>
 
