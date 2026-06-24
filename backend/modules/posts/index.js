@@ -1,5 +1,9 @@
 const supabase = require('../../supabase');
 
+function randomBetween(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 async function syncPost(message, tier) {
   const fileId =
     message.photo?.[message.photo.length - 1]?.file_id ||
@@ -23,6 +27,9 @@ async function syncPost(message, tier) {
       type,
       file_id: fileId,
       caption: message.caption || message.text || null,
+      seed_likes:     randomBetween(50, 500),
+      seed_comments:  randomBetween(5, 80),
+      seed_bookmarks: randomBetween(2, 60),
     })
     .select()
     .single();
