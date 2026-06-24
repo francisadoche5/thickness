@@ -8,14 +8,14 @@ const paymentsModule = require('./api/routes/payments');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ── CORS — only allow your Vercel frontend ────────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
 }));
 
 app.use(express.json());
 
-// ── Rate limiting — max 60 requests per minute per IP ────────────────────────
+// ── Rate limiting ─────────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -23,7 +23,7 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Health check — keeps Render alive
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get('/',       (req, res) => res.json({ status: 'Thickness Backend Running 🌟' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
@@ -32,11 +32,15 @@ app.use('/api/users',         require('./api/routes/users'));
 app.use('/api/posts',         require('./api/routes/posts'));
 app.use('/api/subscriptions', require('./api/routes/subscriptions'));
 app.use('/api/payments',      paymentsModule.router);
+app.use('/api/likes',         require('./api/routes/likes'));
+app.use('/api/comments',      require('./api/routes/comments'));
+app.use('/api/bookmarks',     require('./api/routes/bookmarks'));
+app.use('/api/notifications', require('./api/routes/notifications'));
 
 // Inject bot into payments module
 paymentsModule.setBot(bot);
 
-// ── Start bot and server ──────────────────────────────────────────────────────
+// ── Start ─────────────────────────────────────────────────────────────────────
 bot.launch();
 console.log('🤖 Thickness Bot is running...');
 
