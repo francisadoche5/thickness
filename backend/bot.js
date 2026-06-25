@@ -1,6 +1,6 @@
 const { Telegraf } = require('telegraf');
 const { getOrCreateUser } = require('./modules/users');
-const { syncPost } = require('./modules/posts');
+const { syncPost, deletePost } = require('./modules/posts');
 const { fulfillPayment } = require('./modules/payments');
 const { FREE_CHANNEL_ID, PREMIUM_CHANNEL_ID } = require('./config/channels');
 
@@ -33,6 +33,18 @@ bot.on('channel_post', async (ctx) => {
     await syncPost(message, 'free');
   } else if (chatId === String(PREMIUM_CHANNEL_ID)) {
     await syncPost(message, 'premium');
+  }
+});
+
+// ── Channel post deleted ──────────────────────────────────────────────────────
+bot.on('deleted_channel_post', async (ctx) => {
+  try {
+    const messageId = ctx.update?.deleted_channel_post?.message_id
+      || ctx.update?.message_deleted?.message_id;
+    if (!messageId) return;
+    await deletePost(messageId);
+  } catch (err) {
+    console.error('Delete sync error:', err.message);
   }
 });
 
