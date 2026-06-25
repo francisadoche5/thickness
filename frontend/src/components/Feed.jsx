@@ -4,7 +4,7 @@ import PremiumGate from './PremiumGate';
 import { getFreeFeed, getFullFeed } from '../api';
 import { useLanguage } from '../i18n/LanguageContext';
 
-export default function Feed({ isPremium, telegramId, onUnlocked }) {
+export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, adminSecret }) {
   const { t } = useLanguage();
   const [freePosts,    setFreePosts]    = useState([]);
   const [premiumPosts, setPremiumPosts] = useState([]);
@@ -21,8 +21,8 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
         const freeRes = await getFreeFeed();
         setFreePosts((freeRes.data.posts || []).filter(p => p.tier === 'free'));
 
-        // Load premium posts only if user is premium
-        if (isPremium) {
+        // Load premium posts only if user is premium or admin
+        if (isPremium || isAdmin) {
           const fullRes = await getFullFeed();
           setPremiumPosts((fullRes.data.posts || []).filter(p => p.tier === 'premium'));
         }
@@ -33,7 +33,12 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
       }
     }
     load();
-  }, [isPremium]);
+  }, [isPremium, isAdmin]);
+
+  function handleDeleted(postId) {
+    setFreePosts(prev => prev.filter(p => p.id !== postId));
+    setPremiumPosts(prev => prev.filter(p => p.id !== postId));
+  }
 
   if (showGate) {
     return (
@@ -70,7 +75,7 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
           {t('free')}
         </button>
         <button
-          onClick={() => isPremium ? setActiveTab('premium') : setShowGate(true)}
+          onClick={() => isPremium || isAdmin ? setActiveTab('premium') : setShowGate(true)}
           className={`flex-1 py-3 text-sm font-semibold transition ${
             activeTab === 'premium'
               ? 'text-amber-400 border-b-2 border-amber-400'
@@ -92,9 +97,12 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
             <PostCard
               key={post.id}
               post={post}
-              isPremium={isPremium}
+              isPremium={isPremium || isAdmin}
               userId={telegramId}
               onLockTap={() => setShowGate(true)}
+              isAdmin={isAdmin}
+              adminSecret={adminSecret}
+              onDeleted={handleDeleted}
             />
           ))}
         </div>
