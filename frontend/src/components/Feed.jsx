@@ -32,7 +32,15 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
     return (
       <PremiumGate
         telegramId={telegramId}
-        onUnlocked={() => { setShowGate(false); onUnlocked(); }}
+        onUnlocked={() => {
+          setShowGate(false);
+          setActiveTab('free');
+          onUnlocked();
+        }}
+        onBack={() => {
+          setShowGate(false);
+          setActiveTab('free');
+        }}
       />
     );
   }
@@ -48,13 +56,21 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
       <div className="flex border-b border-border mb-4">
         <button
           onClick={() => setActiveTab('free')}
-          className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === 'free' ? 'text-white border-b-2 border-white' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-sm font-semibold transition ${
+            activeTab === 'free'
+              ? 'text-white border-b-2 border-white'
+              : 'text-gray-500'
+          }`}
         >
           {t('free')}
         </button>
         <button
           onClick={() => isPremium ? setActiveTab('premium') : setShowGate(true)}
-          className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === 'premium' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-sm font-semibold transition ${
+            activeTab === 'premium'
+              ? 'text-amber-400 border-b-2 border-amber-400'
+              : 'text-gray-500'
+          }`}
         >
           {t('premium')} ⭐
         </button>
@@ -72,6 +88,7 @@ export default function Feed({ isPremium, telegramId, onUnlocked }) {
               key={post.id}
               post={post}
               isPremium={isPremium}
+              userId={telegramId}
               onLockTap={() => setShowGate(true)}
             />
           ))}
