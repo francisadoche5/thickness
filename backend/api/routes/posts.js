@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getFeed, getPostById } = require('../../modules/posts');
+const { getFeed, getPostById, deletePostById } = require('../../modules/posts');
 
 // Proxy Telegram file so the frontend can display images/videos
 router.get('/media/:file_id', async (req, res) => {
@@ -36,6 +36,21 @@ router.get('/feed', async (req, res) => {
     const { tier } = req.query;
     const posts = await getFeed(tier && tier !== 'all' ? tier : null);
     res.json({ success: true, posts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: delete a post by its database ID
+router.delete('/:post_id', async (req, res) => {
+  try {
+    const adminSecret = process.env.ADMIN_SECRET;
+    const provided    = req.headers['x-admin-secret'];
+    if (!adminSecret || provided !== adminSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await deletePostById(req.params.post_id);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
