@@ -1,13 +1,13 @@
 export const translations = {
   en: {
     home: 'Home',
-    free: 'Free',
+    free: 'Feed',
     premium: 'Premium',
     unlockPremium: 'Unlock Premium',
     premiumContent: 'Premium Content',
     lockedMessage: 'Subscribe to unlock all premium content',
     oneMonth: '1 Month',
-    threeMonths: '3 Months',
+    threeMonths: '5 Months',
     lifetime: 'Lifetime',
     loading: 'Loading...',
     errorLoading: 'Failed to load content',
