@@ -18,6 +18,8 @@ export default function App() {
   const [devError,         setDevError]      = useState('');
 
   const DEV_PASSWORD = import.meta.env.VITE_DEV_PASSWORD || 'thickness_dev';
+  const ADMIN_TG_ID  = import.meta.env.VITE_ADMIN_TELEGRAM_ID;
+  const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET;
 
   // Secret logo tap counter
   const tapCount  = useRef(0);
@@ -121,6 +123,8 @@ export default function App() {
             isPremium={isPremium}
             telegramId={user?.telegram_id}
             onUnlocked={() => setIsPremium(true)}
+            isAdmin={ADMIN_TG_ID && String(user?.telegram_id) === String(ADMIN_TG_ID)}
+            adminSecret={ADMIN_SECRET}
           />
         </div>
 
