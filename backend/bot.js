@@ -1,10 +1,30 @@
 const { Telegraf } = require('telegraf');
 const { getOrCreateUser } = require('./modules/users');
 const { syncPost, deletePost } = require('./modules/posts');
+const { setActiveLink } = require('./modules/link');
 const { fulfillPayment } = require('./modules/payments');
 const { FREE_CHANNEL_ID, PREMIUM_CHANNEL_ID } = require('./config/channels');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+function extractUrl(text) {
+  if (!text) return null;
+  const match = text.match(/https?:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
+
+function isLinkOnlyPost(message) {
+  // No media attached
+  if (message.photo || message.video || message.document) return false;
+  // Has text or caption that contains a URL
+  const text = message.text || message.caption || '';
+  const url = extractUrl(text);
+  // Only consider it "link only" if the whole message is essentially just the URL
+  // (text with no other words beyond the URL itself)
+  if (!url) return false;
+  const stripped = text.replace(url, '').trim();
+  return stripped.length === 0;
+}
 
 // ── /start ────────────────────────────────────────────────────────────────────
 bot.start(async (ctx) => {
@@ -28,16 +48,25 @@ bot.start(async (ctx) => {
 bot.on('channel_post', async (ctx) => {
   const message = ctx.channelPost;
   const chatId = String(message.chat.id);
+  const tier = chatId === String(FREE_CHANNEL_ID) ? 'free'
+             : chatId === String(PREMIUM_CHANNEL_ID) ? 'premium'
+             : null;
 
-  if (chatId === String(FREE_CHANNEL_ID)) {
-    await syncPost(message, 'free');
-  } else if (chatId === String(PREMIUM_CHANNEL_ID)) {
-    await syncPost(message, 'premium');
+  if (!tier) return;
+
+  // If it's a link-only post, save as active link — don't add to feed
+  if (isLinkOnlyPost(message)) {
+    const text = message.text || message.caption || '';
+    const url = extractUrl(text);
+    await setActiveLink(url, tier);
+    return;
   }
+
+  // Otherwise sync as a normal post
+  await syncPost(message, tier);
 });
 
 // ── Channel post deleted ──────────────────────────────────────────────────────
-// Telegraf doesn't natively support deleted_channel_post — handle via raw update
 bot.use(async (ctx, next) => {
   const update = ctx.update;
   if (update.channel_post_deleted || update.deleted_channel_post) {
