@@ -22,3 +22,4 @@ export const getNotifications      = (userId)                 => API.get(`/api/n
 export const markNotificationsRead = (userId)                 => API.post(`/api/notifications/read/${userId}`);
 
 export const deletePost            = (postId, adminSecret)    => API.delete(`/api/posts/${postId}`, { headers: { 'x-admin-secret': adminSecret } });
+export const getActiveLink = () => API.get('/api/link');
