@@ -12,6 +12,7 @@ function AppInner({ user, isPremium, setIsPremium, expiresAt, devBoostUnlocked, 
   const { lang, setLang } = useLanguage();
   const [isDark, setIsDark]           = useState(true);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [navigateToPostId, setNavigateToPostId] = useState(null);
   const [showDevPrompt, setShowDevPrompt] = useState(false);
   const [devPassword, setDevPassword]     = useState('');
   const [devError, setDevError]           = useState('');
