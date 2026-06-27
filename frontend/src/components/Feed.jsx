@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import PostCard from './PostCard';
 import PremiumGate from './PremiumGate';
@@ -48,7 +48,7 @@ function LinkOverlay({ url, onClose }) {
   );
 }
 
-export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, adminSecret }) {
+export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, adminSecret, navigateToPostId, onNavigated }) {
   const { t } = useLanguage();
   const [freePosts,    setFreePosts]    = useState([]);
   const [premiumPosts, setPremiumPosts] = useState([]);
@@ -56,6 +56,8 @@ export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, admin
   const [showGate,     setShowGate]     = useState(false);
   const [activeTab,    setActiveTab]    = useState('free');
   const [overlayUrl,   setOverlayUrl]   = useState(null);
+  const postRefs = useRef({});  // map of post.id -> DOM ref
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -79,6 +81,28 @@ export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, admin
     }
     load();
   }, [isPremium, isAdmin]);
+
+  // Scroll to post when navigating from bookmarks
+  useEffect(() => {
+    if (!navigateToPostId) return;
+    // Switch to correct tab first
+    const allPosts = [...freePosts, ...premiumPosts];
+    const target = allPosts.find(p => p.id === navigateToPostId);
+    if (target) {
+      setActiveTab(target.tier === 'premium' ? 'premium' : 'free');
+    }
+    // Wait for render then scroll
+    setTimeout(() => {
+      const el = postRefs.current[navigateToPostId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Flash highlight
+        el.style.outline = '2px solid #f59e0b';
+        setTimeout(() => { el.style.outline = ''; }, 1500);
+      }
+      onNavigated?.();
+    }, 100);
+  }, [navigateToPostId]);
 
   // Fetch active link from backend and auto-open
   useEffect(() => {
@@ -155,7 +179,7 @@ export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, admin
       ) : displayed.length === 0 ? (
         <p className="text-center text-gray-500 mt-10">{t('noPosts')}</p>
       ) : (
-        <div className="overflow-y-auto pb-20">
+        <div ref={scrollRef} className="overflow-y-auto pb-20">
           {displayed.map(post => (
             <PostCard
               key={post.id}
@@ -166,6 +190,7 @@ export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, admin
               isAdmin={isAdmin}
               adminSecret={adminSecret}
               onDeleted={handleDeleted}
+              postRef={el => { if (el) postRefs.current[post.id] = el; }}
             />
           ))}
         </div>
