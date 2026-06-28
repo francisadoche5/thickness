@@ -37,7 +37,7 @@ async function syncPost(message, tier) {
   return data;
 }
 
-async function getFeed(tier) {
+async function getFeed(tier, userId) {
   let query = supabase
     .from('posts')
     .select('*');
@@ -46,11 +46,32 @@ async function getFeed(tier) {
     query = query.eq('tier', 'free');
   }
 
-  const { data } = await query
+  const { data: posts } = await query
     .order('created_at', { ascending: false })
     .limit(50);
 
-  return data;
+  if (!posts) return [];
+
+  // If userId provided, fetch which posts the user liked and bookmarked
+  if (userId) {
+    const postIds = posts.map(p => p.id);
+
+    const [likesRes, bookmarksRes] = await Promise.all([
+      supabase.from('likes').select('post_id').eq('user_id', userId).in('post_id', postIds),
+      supabase.from('bookmarks').select('post_id').eq('user_id', userId).in('post_id', postIds),
+    ]);
+
+    const likedSet     = new Set((likesRes.data     || []).map(r => r.post_id));
+    const bookmarkedSet = new Set((bookmarksRes.data || []).map(r => r.post_id));
+
+    return posts.map(p => ({
+      ...p,
+      user_liked:      likedSet.has(p.id),
+      user_bookmarked: bookmarkedSet.has(p.id),
+    }));
+  }
+
+  return posts;
 }
 
 async function getPostById(postId) {
