@@ -93,12 +93,12 @@ export default function Feed({ isPremium, telegramId, onUnlocked, isAdmin, admin
         setLoading(true);
 
         // Always load free posts
-        const freeRes = await getFreeFeed();
+        const freeRes = await getFreeFeed(telegramId);
         setFreePosts((freeRes.data.posts || []).filter(p => p.tier === 'free'));
 
         // Load premium posts only if user is premium or admin
         if (isPremium || isAdmin) {
-          const fullRes = await getFullFeed();
+          const fullRes = await getFullFeed(telegramId);
           setPremiumPosts((fullRes.data.posts || []).filter(p => p.tier === 'premium'));
         }
       } catch (err) {
