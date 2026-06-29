@@ -5,7 +5,6 @@ import { deletePost } from '../api';
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
-// Extract first URL from text
 function extractUrl(text) {
   if (!text) return null;
   const match = text.match(/https?:\/\/[^\s]+/);
@@ -14,9 +13,9 @@ function extractUrl(text) {
 
 export default function PostCard({ post, isPremium, userId, onLockTap, isAdmin, adminSecret, onDeleted, postRef, adUrl }) {
   const isLocked = post.tier === 'premium' && !isPremium;
-  const [mediaUrl, setMediaUrl]         = useState(null);
-  const [mediaError, setMediaError]     = useState(false);
-  const [deleting, setDeleting]         = useState(false);
+  const [mediaUrl, setMediaUrl]     = useState(null);
+  const [mediaError, setMediaError] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   useEffect(() => {
     if (!isLocked && post.file_id) {
@@ -37,19 +36,23 @@ export default function PostCard({ post, isPremium, userId, onLockTap, isAdmin, 
   }
 
   const AD_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 hours
-
   const adFiredRef = useRef(false);
 
   function handleMediaTap() {
-    if (!adUrl) return;
-    if (adFiredRef.current) return; // already fired for this session
     const key = `ad_last_click_${userId}`;
     const last = localStorage.getItem(key);
     const now = Date.now();
-    if (!last || now - parseInt(last) >= AD_COOLDOWN_MS) {
-      adFiredRef.current = true;
-      localStorage.setItem(key, String(now));
-      window.open(adUrl, '_blank');
+
+    // Respect cooldown — only fire once every 2 hours per user
+    if (adFiredRef.current) return;
+    if (last && now - parseInt(last) < AD_COOLDOWN_MS) return;
+
+    adFiredRef.current = true;
+    localStorage.setItem(key, String(now));
+
+    // Fire Monetag popup — takes user directly to the offer page
+    if (typeof show_11218209 === 'function') {
+      show_11218209('pop').catch(() => {});
     }
   }
 
@@ -81,16 +84,12 @@ export default function PostCard({ post, isPremium, userId, onLockTap, isAdmin, 
             playsInline
             className="w-full max-h-[400px] object-contain"
             onError={() => setMediaError(true)}
-            onPlay={() => {
-              // Fire ad on first play
-              if (adUrl) handleMediaTap();
-            }}
+            onPlay={handleMediaTap}
           />
         </div>
       );
     }
 
-    // image or document preview
     return (
       <img
         src={mediaUrl}
@@ -130,7 +129,7 @@ export default function PostCard({ post, isPremium, userId, onLockTap, isAdmin, 
           )}
         </div>
 
-        {/* Caption — URL stripped out since it shows in the link preview box */}
+        {/* Caption */}
         {(() => {
           const text = post.caption?.replace(/https?:\/\/[^\s]+/g, '').trim();
           if (!text) return null;
@@ -151,14 +150,9 @@ export default function PostCard({ post, isPremium, userId, onLockTap, isAdmin, 
           {new Date(post.created_at).toLocaleDateString()}
         </div>
 
-        {/* Actions — likes, comments, bookmarks */}
-        <PostActions
-          post={post}
-          userId={userId}
-
-        />
+        {/* Actions */}
+        <PostActions post={post} userId={userId} />
       </div>
-
     </>
   );
 }
